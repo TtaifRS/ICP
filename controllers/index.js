@@ -1,7 +1,6 @@
 import { fetchCloseLeads } from '../apis/closeCrm.js';
-import { scrapeSocialMediaLinks } from '../utils/scrapper.js';
+import { scrapeWebsiteDetails } from '../utils/websiteScraper.js'; // Updated function
 import { launchBrowser } from '../utils/puppeteer.js';
-
 
 export const postScrapper = async (req, res) => {
   const scrapedLeads = [];
@@ -11,7 +10,6 @@ export const postScrapper = async (req, res) => {
     // Fetch leads from the Close CRM API
     const { leads, success } = await fetchCloseLeads();
 
-    // Ensure the operation proceeds only if `success` is true
     if (!success) {
       return res.status(500).json({ message: 'Failed to fetch leads from Close CRM.' });
     }
@@ -27,14 +25,17 @@ export const postScrapper = async (req, res) => {
 
     // Process each lead sequentially
     for (const lead of testLeads) {
-      const page = await browser.newPage(); // Open a new page for each URL
-      const socialLinks = await scrapeSocialMediaLinks(lead.url, page); // Pass the page instance to scrape function
+      const page = await browser.newPage(); // Open a new page for each lead
+
+      // Scrape both social media links and imprint details
+      const websiteDetails = await scrapeWebsiteDetails(lead.url, page);
+
       await page.close(); // Close the page after scraping
 
       scrapedLeads.push({
         name: lead.name,
         url: lead.url,
-        socialMediaLinks: socialLinks,
+        ...websiteDetails, // Include both socialMediaLinks and imprintDetails
       });
     }
 
@@ -44,6 +45,6 @@ export const postScrapper = async (req, res) => {
     console.error('Error in postScrapper:', err);
     res.status(500).json({ message: err.message });
   } finally {
-    await browser.close(); // Ensure the browser is closed in case of any error
+    await browser.close(); // Ensure the browser is closed in any case
   }
 };

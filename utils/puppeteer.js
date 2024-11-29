@@ -1,9 +1,8 @@
-// Import required modules
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import UserAgent from 'user-agents';
 
-// Add the stealth plugin to puppeteer-extra
+// Add the stealth plugin to Puppeteer
 puppeteer.use(StealthPlugin());
 
 /**
@@ -25,14 +24,14 @@ export const launchBrowser = async () => {
     ],
   });
 
-  // Create a page instance
+  // Create a new page instance
   const page = await browser.newPage();
-
+  await blockUnnecessaryResources(page)
 
   // Set a random user agent
   await page.setUserAgent(userAgent.random().toString());
 
-  // Mimic human interaction
+  // Mimic human interaction by overriding navigator properties
   await page.evaluateOnNewDocument(() => {
     Object.defineProperty(navigator, 'platform', {
       get: () => 'Win32', // Spoof platform as Windows
@@ -45,41 +44,83 @@ export const launchBrowser = async () => {
   return browser;
 };
 
+/**
+ * Blocks unnecessary resources like images, stylesheets, etc., to speed up navigation.
+ * @param {puppeteer.Page} page - Puppeteer page instance.
+ */
 export const blockUnnecessaryResources = async (page) => {
-  await page.setRequestInterception(true); // Enable request interception
+  // Ensure no duplicate request listeners are present
+  page.removeAllListeners('request');
+
+  // Enable request interception
+  await page.setRequestInterception(true);
+
+  // Intercept and handle requests
   page.on('request', (request) => {
-    if (['stylesheet', 'script', 'image', 'font', 'media'].includes(request.resourceType())) {
-      request.abort(); // Block the request
-    } else {
-      request.continue(); // Continue the request
+    try {
+      const resourceType = request.resourceType();
+      if (['stylesheet', 'script', 'image', 'font', 'media'].includes(resourceType)) {
+        request.abort(); // Block unnecessary resources
+      } else {
+        request.continue(); // Allow other requests
+      }
+    } catch (err) {
+      console.error(`Error intercepting request: ${err.message}`);
+      if (!request.isInterceptResolutionHandled()) {
+        request.continue(); // Ensure all requests are resolved
+      }
     }
   });
 };
 
 /**
- * Handles Puppeteer navigation and retries on errors.
+ * Handles navigation with retries in case of errors.
  * @param {puppeteer.Page} page - Puppeteer page instance.
  * @param {string} url - URL to navigate to.
  * @param {number} retries - Number of retry attempts.
- * @returns {Promise<void>}
  */
 export const safeGoto = async (page, url, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-      return; // Exit the function if successful
+      // Navigate to the URL
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      return; // Exit function if navigation is successful
     } catch (error) {
-      console.error(`Error navigating to ${url} (attempt ${attempt}):`, error.message);
+      // Check if the error is related to the execution context being destroyed
+      if (error.message.includes('Execution context was destroyed')) {
+        console.warn(`Execution context error on ${url} (attempt ${attempt}). Retrying...`);
+      } else {
+        console.error(`Error navigating to ${url} (attempt ${attempt}): ${error.message}`);
+      }
+
+      // If max retries reached, rethrow the error
       if (attempt === retries) {
         throw new Error(`Failed to navigate to ${url} after ${retries} attempts.`);
       }
-      await page.waitForTimeout(2000); // Wait before retrying
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Reload the page to reset context
+      try {
+        await page.reload({ waitUntil: 'domcontentloaded' });
+      } catch (reloadError) {
+        console.warn(`Failed to reload the page: ${reloadError.message}`);
+      }
     }
   }
 };
 
 
-
+/**
+ * Mimics human-like scrolling behavior on the page.
+ * @param {puppeteer.Page} page - Puppeteer page instance.
+ * @param {number} distance - Total scrolling distance.
+ * @param {number} minStep - Minimum scrolling step size.
+ * @param {number} maxStep - Maximum scrolling step size.
+ * @param {number} minDelay - Minimum delay (ms) between scrolls.
+ * @param {number} maxDelay - Maximum delay (ms) between scrolls.
+ */
 export const mimicScroll = async (page, distance = 1000, minStep = 30, maxStep = 70, minDelay = 50, maxDelay = 150) => {
   let scrolled = 0;
   while (scrolled < distance) {
@@ -96,11 +137,11 @@ export const mimicScroll = async (page, distance = 1000, minStep = 30, maxStep =
 };
 
 /**
- * Simulates mouse movement across the page with random variations.
- * @param {puppeteer.Page} page - The Puppeteer page instance.
- * @param {Array<{x: number, y: number}>} path - An array of coordinates for the mouse to move along.
- * @param {number} minDelay - Minimum delay (ms) between each movement step.
- * @param {number} maxDelay - Maximum delay (ms) between each movement step.
+ * Simulates human-like mouse movement on the page.
+ * @param {puppeteer.Page} page - Puppeteer page instance.
+ * @param {Array<{x: number, y: number}>} path - Array of coordinates for mouse movement.
+ * @param {number} minDelay - Minimum delay (ms) between movements.
+ * @param {number} maxDelay - Maximum delay (ms) between movements.
  */
 export const mimicMouseMovement = async (page, path, minDelay = 50, maxDelay = 150) => {
   for (const point of path) {
