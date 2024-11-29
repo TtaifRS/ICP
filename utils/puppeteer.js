@@ -14,7 +14,7 @@ export const launchBrowser = async () => {
   const userAgent = new UserAgent();
 
   const browser = await puppeteer.launch({
-    headless: false, // Set to true if you don't need a visible browser
+    headless: false, // Change to true for headless mode
     args: [
       `--user-agent=${userAgent.random().toString()}`,
       '--no-sandbox',
@@ -25,7 +25,9 @@ export const launchBrowser = async () => {
     ],
   });
 
+  // Create a page instance
   const page = await browser.newPage();
+
 
   // Set a random user agent
   await page.setUserAgent(userAgent.random().toString());
@@ -40,35 +42,43 @@ export const launchBrowser = async () => {
     });
   });
 
-  // Block certain resource types like CSS, images, and fonts
-  await page.setRequestInterception(true);
-  page.on('request', (req) => {
-    const resourceType = req.resourceType();
-    if (['stylesheet', 'image', 'font'].includes(resourceType)) {
-      req.abort();
-    } else {
-      req.continue();
-    }
-  });
-
-  // Block JavaScript fingerprinting
-  await page.evaluateOnNewDocument(() => {
-    const originalQuery = window.navigator.permissions.query;
-    window.navigator.permissions.query = (parameters) => (
-      parameters.name === 'notifications' ? Promise.resolve({ state: 'denied' }) : originalQuery(parameters)
-    );
-
-    // Spoof WebGL renderer
-    const getParameter = WebGLRenderingContext.prototype.getParameter;
-    WebGLRenderingContext.prototype.getParameter = function (parameter) {
-      if (parameter === 37445) return 'Intel Inc.'; // Spoof vendor
-      if (parameter === 37446) return 'Intel Iris OpenGL Engine'; // Spoof renderer
-      return getParameter(parameter);
-    };
-  });
-
   return browser;
 };
+
+export const blockUnnecessaryResources = async (page) => {
+  await page.setRequestInterception(true); // Enable request interception
+  page.on('request', (request) => {
+    if (['stylesheet', 'script', 'image', 'font', 'media'].includes(request.resourceType())) {
+      request.abort(); // Block the request
+    } else {
+      request.continue(); // Continue the request
+    }
+  });
+};
+
+/**
+ * Handles Puppeteer navigation and retries on errors.
+ * @param {puppeteer.Page} page - Puppeteer page instance.
+ * @param {string} url - URL to navigate to.
+ * @param {number} retries - Number of retry attempts.
+ * @returns {Promise<void>}
+ */
+export const safeGoto = async (page, url, retries = 3) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+      return; // Exit the function if successful
+    } catch (error) {
+      console.error(`Error navigating to ${url} (attempt ${attempt}):`, error.message);
+      if (attempt === retries) {
+        throw new Error(`Failed to navigate to ${url} after ${retries} attempts.`);
+      }
+      await page.waitForTimeout(2000); // Wait before retrying
+    }
+  }
+};
+
+
 
 export const mimicScroll = async (page, distance = 1000, minStep = 30, maxStep = 70, minDelay = 50, maxDelay = 150) => {
   let scrolled = 0;

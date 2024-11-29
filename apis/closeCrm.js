@@ -16,13 +16,13 @@ export const fetchCloseLeads = async () => {
       },
     });
     const leads = response.data?.data || [];
-    const leadDetails = leads.map((lead) => ({
-      url: lead.url,
-      name: lead.name,
-      success: true
-    }));
-
-    return leadDetails;
+    return {
+      leads: leads.map((lead) => ({
+        url: lead.url,
+        name: lead.name,
+      })),
+      success: true,
+    };
 
   } catch (err) {
 
