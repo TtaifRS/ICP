@@ -10,12 +10,13 @@ puppeteer.use(StealthPlugin());
  * @returns {Promise<puppeteer.Browser>} Puppeteer browser instance.
  */
 export const launchBrowser = async () => {
-  const userAgent = new UserAgent();
+  const desktopUserAgent = new UserAgent({ deviceCategory: 'desktop' }).random().toString();
+
 
   const browser = await puppeteer.launch({
     headless: false, // Change to true for headless mode
     args: [
-      `--user-agent=${userAgent.random().toString()}`,
+      `--user-agent=${desktopUserAgent}`,
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-web-security',
@@ -29,7 +30,7 @@ export const launchBrowser = async () => {
   await blockUnnecessaryResources(page)
 
   // Set a random user agent
-  await page.setUserAgent(userAgent.random().toString());
+  await page.setUserAgent(desktopUserAgent);
 
   // Mimic human interaction by overriding navigator properties
   await page.evaluateOnNewDocument(() => {
@@ -83,7 +84,7 @@ export const safeGoto = async (page, url, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       // Navigate to the URL
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
       return; // Exit function if navigation is successful
     } catch (error) {
       // Check if the error is related to the execution context being destroyed
@@ -150,3 +151,4 @@ export const mimicMouseMovement = async (page, path, minDelay = 50, maxDelay = 1
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 };
+
