@@ -1,6 +1,4 @@
 import * as cheerio from 'cheerio';
-import validator from 'validator';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { mimicScroll, safeGoto } from './puppeteer.js';
 import {
   calculateTextToHtmlRatio,
@@ -20,7 +18,8 @@ import {
   checkSchemaMarkup,
   checkViewportMetaTag,
   checkTitleTag
-} from './seoChecker.js';
+} from '../helpers/seoChecker.js';
+import { extractEmailsFromAnchors, extractFromFullHtml, extractJobTitlesAndNames, extractPhonesFromAnchors } from '../helpers/contactInfo.js';
 
 /**
  * Extracts social media links from the page HTML.
@@ -76,77 +75,49 @@ const findImprintLink = (html, baseUrl) => {
 
 
 
+
 /**
- * Extracts all telephone numbers and emails from the Imprint/Impressum page.
- * @param {string} html - The HTML content of the Imprint/Impressum page.
- * @returns {Object} An object containing arrays of emails and phones, if found.
+ * Extracts emails, phone numbers, and names with job titles from Imprint/Impressum page HTML.  
+ * Uses Cheerio to parse `<a>` tags and analyze text for predefined job titles.  
+ * Includes a fallback to extract data directly from the full HTML content.  
+ * @param {string} html - HTML content of the page.  
+ * @returns {Object} Emails, phones, and job titles with names.  
  */
+
 export const extractContactInfo = (html) => {
   const $ = cheerio.load(html);
 
-  // Patterns for email and phone
   const emailPattern = /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
-  const phonePattern = /tel:([\d\s()+-]+)/i; // Matches general phone formats
+  const phonePattern = /tel:([\d\s()+-]+)/i;
+  const jobTitles = [
+    'CEO', 'Geschäftsführer', 'Managing Director', 'Founder', 'Co-Founder',
+    'Owner', 'Partner', 'Vorstand', 'Vorsitzender', 'Direktor',
+    'CFO', 'COO', 'CTO', 'CMO', 'Präsident', 'Vizepräsident',
+    'General Manager', 'Betriebsleiter', 'Abteilungsleiter', 'Ansprechpartner', 'Verantwortlich',
+  ];
 
-  const emails = new Set();
-  const phones = new Set();
+  // Extract emails and phones from anchor tags
+  const emails = extractEmailsFromAnchors($, emailPattern);
+  const phones = extractPhonesFromAnchors($, phonePattern);
 
-  // Extract emails and phones from <a> tags with href attributes
-  $('a[href]').each((_, element) => {
-    const href = $(element).attr('href');
+  // Extract job titles and names
+  const textContent = $.text();
+  const jobTitlesWithNames = extractJobTitlesAndNames(textContent, jobTitles);
 
-    // Extract emails
-    if (emailPattern.test(href)) {
-      const extractedEmail = href.match(emailPattern)?.[1];
-      if (validator.isEmail(extractedEmail)) {
-        emails.add(extractedEmail);
-      }
-    }
+  // Fallback: Extract from the full HTML
+  const { emails: fallbackEmails, phones: fallbackPhones } = extractFromFullHtml($.html());
 
-    // Extract phones
-    if (phonePattern.test(href)) {
-      const extractedPhone = href.match(phonePattern)?.[1];
-      if (typeof extractedPhone === 'string') {
-        const parsedPhone = parsePhoneNumberFromString(extractedPhone);
-        if (parsedPhone && parsedPhone.isValid()) {
-          phones.add(parsedPhone.number);
-        }
-      }
-    }
-  });
+  // Combine and deduplicate emails and phones
+  fallbackEmails.forEach((email) => emails.add(email));
+  fallbackPhones.forEach((phone) => phones.add(phone));
 
-  // Fallback to the full HTML content if not all emails or phones are found
-  const fullHtml = $.html();
-
-  // Extract emails from full HTML
-  const emailMatches = fullHtml.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
-  if (emailMatches) {
-    emailMatches.forEach((email) => {
-      if (validator.isEmail(email)) {
-        emails.add(email);
-      }
-    });
-  }
-
-  // Extract phones from full HTML
-  const phoneMatches = fullHtml.match(/[\d\s()+-]+/g);
-  if (phoneMatches) {
-    phoneMatches.forEach((phone) => {
-      if (typeof phone === 'string') {
-        const parsedPhone = parsePhoneNumberFromString(phone);
-        if (parsedPhone && parsedPhone.isValid()) {
-          phones.add(parsedPhone.number);
-        }
-      }
-    });
-  }
-
-  // Convert Sets to Arrays for output
   return {
     emails: Array.from(emails),
     phones: Array.from(phones),
+    jobTitlesWithNames,
   };
 };
+
 
 /**
  * Function to check SEO-related tags on a webpage.

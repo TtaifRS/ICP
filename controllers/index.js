@@ -35,7 +35,7 @@ export const postScrapper = async (req, res) => {
       scrapedLeads.push({
         name: lead.name,
         url: lead.url,
-        ...websiteDetails, // Include both socialMediaLinks and imprintDetails
+        ...websiteDetails,
       });
     }
 
