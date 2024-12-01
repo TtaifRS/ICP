@@ -43,19 +43,41 @@ export const extractPhonesFromAnchors = ($, phonePattern) => {
 export const extractJobTitlesAndNames = (textContent, jobTitles) => {
   const jobTitlesWithNames = [];
 
-  jobTitles.forEach((title) => {
-    const titleIndex = textContent.indexOf(title);
-    if (titleIndex !== -1) {
-      const before = textContent.slice(Math.max(0, titleIndex - 500), titleIndex);
-      const after = textContent.slice(titleIndex, titleIndex + 500);
-      const surroundingText = `${before} ${after}`;
 
-      const names = nlp(surroundingText).people().out('array');
-      names.forEach((name) => {
-        jobTitlesWithNames.push({ name, title });
-      });
+  const cleanText = textContent
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[\n\r\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Step 2: Process each job title
+  jobTitles.forEach((title) => {
+    const regex = new RegExp(
+      `(${title}):?\\s+([\\w.,\\s-]+?(?=(?:Tel:|Fax:|E-mail:|VAT ID|Register court|Management|\\n|$)))`,
+      'gi'
+    );
+    const matches = cleanText.matchAll(regex);
+
+    for (const match of matches) {
+      const rawText = match[0];
+      const potentialNames = match[2]?.trim();
+
+
+      const doc = nlp(rawText);
+      const extractedNames = doc.people().out('array');
+
+      if (extractedNames.length > 0) {
+
+        extractedNames.forEach((name) => {
+          jobTitlesWithNames.push({ name: name.trim(), title });
+        });
+      } else if (potentialNames) {
+
+        jobTitlesWithNames.push({ name: potentialNames, title });
+      }
     }
   });
+
 
   return jobTitlesWithNames;
 };

@@ -94,6 +94,8 @@ export const extractContactInfo = (html) => {
     'Owner', 'Partner', 'Vorstand', 'Vorsitzender', 'Direktor',
     'CFO', 'COO', 'CTO', 'CMO', 'Präsident', 'Vizepräsident',
     'General Manager', 'Betriebsleiter', 'Abteilungsleiter', 'Ansprechpartner', 'Verantwortlich',
+    'Vorsitzende des Aufsichtsrats', 'Chairman', 'Chairwoman', 'Chairperson', 'Chairman of the Supervisory Board',
+    'Management', 'Director', 'Supervisory Board', 'Head of', 'Principal', 'Leader'
   ];
 
   // Extract emails and phones from anchor tags
