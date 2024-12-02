@@ -7,6 +7,7 @@ import { fetchPageSpeedData } from '../utils/pageSpeedApi.js';
 import { searchWebsiteOnGoogle } from '../utils/googleSearch.js';
 import { scrapeFacebookFollowers, scrapeInstagramFollowers, scrapeLinkedInData } from '../utils/socialMediaScrapping.js';
 import { handleAuthWall } from '../helpers/authWallHelper.js';
+import { scrapeGoogleAdTransparency } from '../utils/adScraper.js';
 
 export const postScrapper = async (req, res) => {
   const scrapedLeads = [];
@@ -28,7 +29,7 @@ export const postScrapper = async (req, res) => {
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
     console.log('Dummy search for "Wikipedia" completed.');
 
-    const testLeads = leadDetails.slice(2, 6);
+    const testLeads = leadDetails.slice(0, 6);
 
     for (const lead of testLeads) {
       const leadPage = await browser.newPage();
@@ -76,8 +77,15 @@ export const postScrapper = async (req, res) => {
             const retryPage = await retryBrowser.newPage()
             console.warn('LinkedIn auth wall detected. Retrying...');
             await handleAuthWall(browser, retryPage);
-            retryCount++;
-            await retryBrowser.close()
+            linkedinData = await scrapeLinkedInData(retryPage, linkedin);
+            if (linkedinData) {
+              await retryBrowser.close()
+              break
+            } else {
+              retryCount++;
+            }
+
+
           }
 
 
@@ -90,14 +98,17 @@ export const postScrapper = async (req, res) => {
         await linkedinPage.close();
       }
 
-      // Step 5: Fetch PageSpeed data
+      // Step 5: Scrape google ad 
+      const adTransparencyData = await scrapeGoogleAdTransparency(searchPage, lead.url);
+
+      // Step 6: Fetch PageSpeed data
       const mobileData = await fetchPageSpeedData(lead.url, 'mobile');
       const desktopData = await fetchPageSpeedData(lead.url, 'desktop');
 
-      // Step 6: Search Google for ranking
+      // Step 7: Search Google for ranking
       const { rank, matchingUrls } = await searchWebsiteOnGoogle(searchPage, lead.name, lead.url);
 
-      // Step 7: Compile the results
+      // Step 8: Compile the results
       scrapedLeads.push({
         name: lead.name,
         url: lead.url,
@@ -106,6 +117,7 @@ export const postScrapper = async (req, res) => {
         instagramFollowers,
         linkedinData,
         imprintDetails,
+        googleAdTransparency: adTransparencyData,
         pageSpeed: {
           mobile: mobileData.success ? mobileData.metrics : { error: 'Failed to fetch mobile data' },
           desktop: desktopData.success ? desktopData.metrics : { error: 'Failed to fetch desktop data' },
@@ -126,6 +138,26 @@ export const postScrapper = async (req, res) => {
     await browser.close();
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const testFunction = async (req, res) => {
   const browser = await launchBrowser();
   try {
@@ -133,10 +165,10 @@ export const testFunction = async (req, res) => {
 
     const searchPage = await browser.newPage();
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
+    const websiteDetails = await scrapeWebsiteDetails("https://www.rentschpartner.ch/", searchPage);
 
-    const instagramFollowers = await scrapeInstagramFollowers(searchPage, "https://www.instagram.com/roundtablede/");
 
-    res.status(200).json(instagramFollowers);
+    res.status(200).json(websiteDetails);
   }
   catch (err) {
 

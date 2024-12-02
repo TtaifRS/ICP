@@ -9,11 +9,10 @@ import nlp from 'compromise';
  */
 export const scrapeFacebookFollowers = async (page, facebookUrl) => {
   try {
-    // Construct the followers URL
-    const followersUrl = `${facebookUrl}/followers`;
+
 
     // Navigate to the followers page
-    await safeGoto(page, followersUrl);
+    await safeGoto(page, facebookUrl);
 
     // Wait for the page to load necessary content
     await page.waitForSelector('a[href*="/followers"]', { timeout: 5000 });

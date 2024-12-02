@@ -40,47 +40,71 @@ export const extractPhonesFromAnchors = ($, phonePattern) => {
 };
 
 // Helper to extract job titles and names
+
 export const extractJobTitlesAndNames = (textContent, jobTitles) => {
-  const jobTitlesWithNames = [];
+  const words = textContent.split(/\s+/); // Split the text into words
+  const results = [];
+  const seen = new Set(); // Track unique jobTitle-name pairs
 
+  // Helper function to extract names and titles in structured lists
+  const extractStructuredNames = (text, jobTitle) => {
+    const regex = new RegExp(`${jobTitle}:\\s*([^,]+(?:,\\s*[^,]+)*)`, 'i'); // Match "JobTitle: name1, name2, ..."
+    const match = text.match(regex);
+    if (match) {
+      const names = match[1].split(',').map(name => name.trim());
+      names.forEach((fullName) => {
+        const cleanedName = fullName.replace(/\(.*?\)/g, '').trim(); // Remove parentheses and extra text
+        const nameDoc = nlp(cleanedName);
+        const peopleNames = nameDoc.people().out('array'); // Extract cleaned names
+        if (peopleNames.length > 0) {
+          const name = peopleNames[0];
+          if (name.split(' ').length >= 2) { // Ensure the name has at least two words
+            const key = `${jobTitle}|${name}`;
+            if (!seen.has(key)) {
+              results.push({ jobTitle, name });
+              seen.add(key); // Deduplicate
+            }
+          }
+        }
+      });
+    }
+  };
 
-  const cleanText = textContent
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/[\n\r\t]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // Check for structured data first
+  for (const jobTitle of jobTitles) {
+    extractStructuredNames(textContent, jobTitle);
+  }
 
-  // Step 2: Process each job title
-  jobTitles.forEach((title) => {
-    const regex = new RegExp(
-      `(${title}):?\\s+([\\w.,\\s-]+?(?=(?:Tel:|Fax:|E-mail:|VAT ID|Register court|Management|\\n|$)))`,
-      'gi'
-    );
-    const matches = cleanText.matchAll(regex);
+  // Continue with existing logic for unstructured data
+  for (let i = 0; i < words.length; i++) {
+    for (const jobTitle of jobTitles) {
+      if (words[i].toLowerCase().includes(jobTitle.toLowerCase())) {
+        // Job title match found
+        const potentialName = words.slice(i + 1, i + 11).join(' '); // Check the next 10 words
+        const nameDoc = nlp(potentialName.replace(/\(.*?\)/g, '').trim());
+        const peopleNames = nameDoc.people().out('array'); // Extract names using NLP
 
-    for (const match of matches) {
-      const rawText = match[0];
-      const potentialNames = match[2]?.trim();
-
-
-      const doc = nlp(rawText);
-      const extractedNames = doc.people().out('array');
-
-      if (extractedNames.length > 0) {
-
-        extractedNames.forEach((name) => {
-          jobTitlesWithNames.push({ name: name.trim(), title });
-        });
-      } else if (potentialNames) {
-
-        jobTitlesWithNames.push({ name: potentialNames, title });
+        if (peopleNames.length > 0) {
+          const name = peopleNames[0];
+          if (name.split(' ').length >= 2) { // Ensure the name has at least two words
+            const key = `${jobTitle}|${name}`;
+            if (!seen.has(key)) {
+              results.push({ jobTitle, name });
+              seen.add(key);
+            }
+          }
+          i += name.split(' ').length; // Skip over the detected name words
+          break; // Move to the next word after a match
+        }
       }
     }
-  });
+  }
 
-
-  return jobTitlesWithNames;
+  return results;
 };
+
+
+
 
 // Helper to extract emails and phones from the full HTML
 export const extractFromFullHtml = (html) => {

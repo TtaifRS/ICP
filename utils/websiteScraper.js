@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { mimicScroll, safeGoto } from './puppeteer.js';
+import { mimicScroll, safeGoto, waitForDynamicContent } from './puppeteer.js';
 import {
   calculateTextToHtmlRatio,
   checkBrokenLinks,
@@ -70,8 +70,17 @@ const findImprintLink = (html, baseUrl) => {
     })
     .attr('href');
 
-  return imprintLink ? new URL(imprintLink, baseUrl).toString() : null;
+  if (!imprintLink) {
+    return null;
+  }
+
+  // Check if the href is an absolute URL
+  const isAbsoluteUrl = /^(https?:)?\/\//i.test(imprintLink);
+
+  // If it's a relative URL, combine it with the base URL
+  return isAbsoluteUrl ? imprintLink : new URL(imprintLink, baseUrl).toString();
 };
+
 
 
 
@@ -90,12 +99,11 @@ export const extractContactInfo = (html) => {
   const emailPattern = /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
   const phonePattern = /tel:([\d\s()+-]+)/i;
   const jobTitles = [
-    'CEO', 'Geschäftsführer', 'Managing Director', 'Founder', 'Co-Founder',
+    'CEO', 'Geschäftsführer', 'Geschäftsführung', 'Director', 'Founder', 'Co-Founder',
     'Owner', 'Partner', 'Vorstand', 'Vorsitzender', 'Direktor',
     'CFO', 'COO', 'CTO', 'CMO', 'Präsident', 'Vizepräsident',
-    'General Manager', 'Betriebsleiter', 'Abteilungsleiter', 'Ansprechpartner', 'Verantwortlich',
-    'Vorsitzende des Aufsichtsrats', 'Chairman', 'Chairwoman', 'Chairperson', 'Chairman of the Supervisory Board',
-    'Management', 'Director', 'Supervisory Board', 'Head of', 'Principal', 'Leader'
+    'Manager', 'Betriebsleiter', 'Abteilungsleiter', 'Chairman', 'Chairwoman', 'Chairperson',
+    'Management', 'Director', 'Board', 'Principal', 'Leader', 'Aufsichtsrates'
   ];
 
   // Extract emails and phones from anchor tags
@@ -166,6 +174,10 @@ export const scrapeWebsiteDetails = async (url, page) => {
   try {
     // Navigate to the main URL
     await safeGoto(page, url);
+
+    // await for dynamic content
+    await waitForDynamicContent(page)
+
     // await blockUnnecessaryResources(page);
     await mimicScroll(page, 2000);
 
@@ -186,12 +198,16 @@ export const scrapeWebsiteDetails = async (url, page) => {
     if (imprintLink) {
       // Navigate to the Imprint/Impressum page
       await safeGoto(page, imprintLink);
+      // await for dynamic content
+      await waitForDynamicContent(page)
       // await blockUnnecessaryResources(page);
       await mimicScroll(page, 2000);
 
-      // Extract contact information from the Imprint/Impressum page
-      const imprintHtml = await page.content();
-      imprintDetails = extractContactInfo(imprintHtml);
+      // Extract only the text content from the page
+      const imprintText = await page.evaluate(() => document.body.innerText);
+
+      // Extract contact information using the text
+      imprintDetails = extractContactInfo(imprintText);
     }
 
     return { socialMediaLinks, imprintDetails, seoInfo };

@@ -22,6 +22,7 @@ export const launchBrowser = async () => {
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-blink-features=AutomationControlled',
+      '--lang=en-US,en'
     ],
   });
 
@@ -40,7 +41,15 @@ export const launchBrowser = async () => {
     Object.defineProperty(navigator, 'vendor', {
       get: () => 'Google Inc.',
     });
+    Object.defineProperty(navigator, 'language', {
+      get: () => 'en-US', // Force language to English
+    });
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['en-US', 'en'], // Spoof supported languages
+    });
   });
+
+  await page.setGeolocation({ latitude: 52.5200, longitude: 13.4050 });
 
   return browser;
 };
@@ -152,3 +161,14 @@ export const mimicMouseMovement = async (page, path, minDelay = 50, maxDelay = 1
   }
 };
 
+
+export const waitForDynamicContent = async (page, timeout = 30000) => {
+  try {
+    await page.waitForFunction(
+      () => document.querySelectorAll('*').length > 0,
+      { timeout }
+    );
+  } catch {
+    throw new Error('Dynamic content did not load within the timeout.');
+  }
+};
