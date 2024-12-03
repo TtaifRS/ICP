@@ -1,39 +1,52 @@
+import * as cheerio from 'cheerio'
 import { safeGoto } from '../utils/puppeteer.js';
 
 export const scrapeFacebookPageID = async (page, facebookUrl) => {
   try {
     // Construct the URL for profile transparency
-    const transparencyUrl = `${facebookUrl}/about_profile_transparency`;
+    const transparencyUrl = facebookUrl.endsWith('/')
+      ? `${facebookUrl}about_profile_transparency`
+      : `${facebookUrl}/about_profile_transparency`;
 
     // Navigate to the profile transparency page
     await safeGoto(page, transparencyUrl);
 
-    // Wait for the page to load necessary content
-    await page.waitForSelector('body', { timeout: 5000 });
+    // Wait for the page to load and give enough time for the content to render
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    await delay(3000);
 
-    // Extract the text that matches the page ID pattern
-    const pageIdText = await page.evaluate(() => {
-      // Find all text content on the page
-      const bodyText = document.body.textContent;
+    // Get the HTML content of the page
+    const html = await page.content();
 
-      // Regex to match a string of digits (at least 9 digits)
-      const match = bodyText.match(/\b\d{9,12}\b/);
+    // Load the HTML into Cheerio
+    const $ = cheerio.load(html);
 
-      // Return the matched string or null if not found
-      return match ? match[0] : null;
-    });
+    // Find all text inside <span> tags
+    const spanText = $('span').map((i, el) => $(el).text().trim()).get();
+    console.log('All Span Text:', spanText);
 
-    if (!pageIdText) {
-      console.warn(`No Page ID found on ${transparencyUrl}`);
-      return null;
+    // Find the index of "Page ID"
+    const pageIdIndex = spanText.findIndex((text) => text.includes('Page ID'));
+    console.log('Page Index:', pageIdIndex);
+
+    if (pageIdIndex > 0) {
+      // Get the text before "Page ID"
+      const pageId = spanText[pageIdIndex - 1];
+      return pageId || null; // Return the Page ID or null if not found
     }
 
-    return pageIdText; // Return the extracted page ID
+    console.warn(`No Page ID found on ${transparencyUrl}`);
+    return null;
   } catch (error) {
     console.error(`Error scraping Page ID from ${facebookUrl}:`, error);
     return null;
   }
 };
+
+
+
+
+
 
 export const scrapeMetaAdLibrary = async (page, pageId) => {
   try {

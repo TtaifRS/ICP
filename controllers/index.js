@@ -32,6 +32,12 @@ export const postScrapers = async (req, res) => {
     const testLeads = leadDetails.slice(0, 20);
 
     for (const lead of testLeads) {
+
+      if (!lead.url) {
+        console.warn(`Skipping lead ${lead.name || 'unknown'} due to missing URL.`);
+        continue;
+      }
+
       const leadPage = await browser.newPage();
 
       // Step 1: Scrape website details
@@ -169,10 +175,10 @@ export const testFunction = async (req, res) => {
 
     const searchPage = await browser.newPage();
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
-    const websiteDetails = await scrapeWebsiteDetails("https://www.rentschpartner.ch/", searchPage);
-
-
-    res.status(200).json(websiteDetails);
+    const metaAdLibrary = await scrapeFacebookAndMetaAdLibrary(searchPage, "https://www.facebook.com/geers.hoerakustik")
+    res.status(200).json({
+      metaAdLibrary
+    });
   }
   catch (err) {
 

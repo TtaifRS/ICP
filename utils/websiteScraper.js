@@ -36,7 +36,7 @@ const extractSocialMediaLinks = (html) => {
     linkedin: /linkedin\.com\/in\/[A-Za-z0-9-]+|linkedin\.com\/company\/[A-Za-z0-9-]+/i,
     youtube: /youtube\.com\/(channel|c|user)\/[A-Za-z0-9_-]+/i,
     pinterest: /pinterest\.com\/[A-Za-z0-9_-]+/i,
-    xing: /xing\.com\/profile\/[A-Za-z0-9-]+/i,
+    xing: /xing\.com/i,
   };
 
   const socialMediaLinks = {};
@@ -210,7 +210,7 @@ export const scrapeWebsiteDetails = async (url, page) => {
       imprintDetails = extractContactInfo(imprintText);
     }
 
-    return { socialMediaLinks, imprintDetails, seoInfo };
+    return { socialMediaLinks, imprintDetails };
   } catch (error) {
     console.error(`Error while scraping ${url}:`, error);
     return { socialMediaLinks: {}, imprintDetails: null, seoInfo: null };
