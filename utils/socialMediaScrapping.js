@@ -9,32 +9,15 @@ import nlp from 'compromise';
  */
 export const scrapeFacebookFollowers = async (page, facebookUrl) => {
   try {
-
-
     // Navigate to the followers page
     await safeGoto(page, facebookUrl);
 
     // Wait for the page to load necessary content
     await page.waitForSelector('a[href*="/followers"]', { timeout: 5000 });
 
-    // Extract the followers text
+    // Extract and return the followers text
     const followersText = await page.$eval('a[href*="/followers"]', (aTag) => aTag.textContent.trim());
-
-    // Regex to capture numbers with potential K, M, or B suffixes
-    const followersMatch = followersText.match(/([\d,.]+)\s*[KMB]?/i);
-
-    if (!followersMatch) return null;
-
-    // Parse the followers count
-    let followersCount = parseFloat(followersMatch[1].replace(/,/g, '')); // Remove commas and convert to float
-    const suffix = followersText.match(/[KMB]/i)?.[0]?.toUpperCase();
-
-    // Adjust the count based on suffix
-    if (suffix === 'K') followersCount *= 1_000;
-    else if (suffix === 'M') followersCount *= 1_000_000;
-    else if (suffix === 'B') followersCount *= 1_000_000_000;
-
-    return Math.round(followersCount); // Return as an integer
+    return followersText;
   } catch (error) {
     console.error(`Error scraping followers from ${facebookUrl}:`, error);
     return null;

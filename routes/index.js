@@ -1,9 +1,9 @@
 import express from 'express'
-import { postScrapper, testFunction } from '../controllers/index.js'
+import { postScrapers, testFunction } from '../controllers/index.js'
 
 const router = express.Router()
 
-router.post('/leads', postScrapper)
+router.post('/leads', postScrapers)
 router.get('/test', testFunction)
 
 

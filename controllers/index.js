@@ -7,9 +7,9 @@ import { fetchPageSpeedData } from '../utils/pageSpeedApi.js';
 import { searchWebsiteOnGoogle } from '../utils/googleSearch.js';
 import { scrapeFacebookFollowers, scrapeInstagramFollowers, scrapeLinkedInData } from '../utils/socialMediaScrapping.js';
 import { handleAuthWall } from '../helpers/authWallHelper.js';
-import { scrapeGoogleAdTransparency } from '../utils/adScraper.js';
+import { scrapeFacebookAndMetaAdLibrary, scrapeGoogleAdTransparency } from '../utils/adScraper.js';
 
-export const postScrapper = async (req, res) => {
+export const postScrapers = async (req, res) => {
   const scrapedLeads = [];
   const browser = await launchBrowser();
 
@@ -29,7 +29,7 @@ export const postScrapper = async (req, res) => {
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
     console.log('Dummy search for "Wikipedia" completed.');
 
-    const testLeads = leadDetails.slice(0, 6);
+    const testLeads = leadDetails.slice(0, 20);
 
     for (const lead of testLeads) {
       const leadPage = await browser.newPage();
@@ -47,6 +47,8 @@ export const postScrapper = async (req, res) => {
       const { facebook, instagram, linkedin } = socialMediaLinks;
 
       let facebookFollowers = null;
+
+      let metaAdLibrary = null;
       let instagramFollowers = null;
       let linkedinData = null;
 
@@ -54,6 +56,7 @@ export const postScrapper = async (req, res) => {
       if (facebook) {
         const facebookPage = await browser.newPage();
         facebookFollowers = await scrapeFacebookFollowers(facebookPage, facebook);
+        metaAdLibrary = await scrapeFacebookAndMetaAdLibrary(facebookPage, facebook)
         await facebookPage.close();
       }
 
@@ -118,6 +121,7 @@ export const postScrapper = async (req, res) => {
         linkedinData,
         imprintDetails,
         googleAdTransparency: adTransparencyData,
+        metaAdLibrary,
         pageSpeed: {
           mobile: mobileData.success ? mobileData.metrics : { error: 'Failed to fetch mobile data' },
           desktop: desktopData.success ? desktopData.metrics : { error: 'Failed to fetch desktop data' },

@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { safeGoto, mimicScroll } from './puppeteer.js';
+import { scrapeFacebookPageID, scrapeMetaAdLibrary } from '../helpers/facebookAd.js';
 
 export const scrapeGoogleAdTransparency = async (page, leadUrl) => {
   let result = null;
@@ -55,4 +56,45 @@ export const scrapeGoogleAdTransparency = async (page, leadUrl) => {
   }
 
   return result;
+};
+
+
+/**
+ * Combines scrapeFacebookPageID and scrapeMetaAdLibrary into one function.
+ * @param {object} page - Puppeteer page instance.
+ * @param {string} facebookUrl - URL of the Facebook page.
+ * @returns {object} - Data from Meta Ad Library or error information.
+ */
+export const scrapeFacebookAndMetaAdLibrary = async (page, facebookUrl) => {
+  try {
+    // Step 1: Scrape Facebook Page ID
+    const pageId = await scrapeFacebookPageID(page, facebookUrl);
+
+    if (!pageId) {
+      console.warn(`No Page ID found for ${facebookUrl}. Skipping Meta Ad Library scraping.`);
+      return {
+        facebookUrl,
+        pageId: null,
+        adLibraryData: null,
+        message: 'Page ID not found, skipping Meta Ad Library scraping.',
+      };
+    }
+
+    // Step 2: Scrape Meta Ad Library using the Page ID
+    const adLibraryData = await scrapeMetaAdLibrary(page, pageId);
+
+    return {
+      facebookUrl,
+      pageId,
+      adLibraryData,
+    };
+  } catch (error) {
+    console.error(`Error combining Facebook Page ID and Meta Ad Library scraping for ${facebookUrl}:`, error);
+    return {
+      facebookUrl,
+      pageId: null,
+      adLibraryData: null,
+      error: error.message,
+    };
+  }
 };
