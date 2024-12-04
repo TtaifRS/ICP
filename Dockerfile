@@ -1,8 +1,23 @@
 
-FROM ghcr.io/puppeteer/puppeteer:23.9.0
+FROM node:20-slim
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-  PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+
+
+# Install Chromium dependencies
+RUN apt-get update && apt-get install -y \
+  chromium \
+  libgconf-2-4 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libgdk-pixbuf2.0-0 \
+  libgtk-3-0 \
+  libgbm-dev \
+  libnss3 \
+  libxss1 \
+  libasound2 \
+  --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /usr/src/app
 
