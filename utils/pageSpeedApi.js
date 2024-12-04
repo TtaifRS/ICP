@@ -80,7 +80,6 @@ export const fetchPageSpeedData = async (url, strategy) => {
       }
     }
 
-    // General fallback for unexpected errors
     return { success: false, message: `Unable to fetch PageSpeed data for the URL: ${url}. Error: ${error.message}` };
   }
 };

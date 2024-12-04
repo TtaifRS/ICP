@@ -1,5 +1,7 @@
 import * as cheerio from 'cheerio';
-import { mimicScroll, safeGoto, waitForDynamicContent } from './puppeteer.js';
+
+import { blockUnnecessaryResources, mimicScroll, safeGoto } from './puppeteer.js';
+
 import {
   calculateTextToHtmlRatio,
   checkBrokenLinks,
@@ -87,8 +89,6 @@ const findImprintLink = (html, baseUrl) => {
 
 /**
  * Extracts emails, phone numbers, and names with job titles from Imprint/Impressum page HTML.  
- * Uses Cheerio to parse `<a>` tags and analyze text for predefined job titles.  
- * Includes a fallback to extract data directly from the full HTML content.  
  * @param {string} html - HTML content of the page.  
  * @returns {Object} Emails, phones, and job titles with names.  
  */
@@ -154,7 +154,7 @@ export const checkSeoTags = (html) => {
     textToHtmlRatio: calculateTextToHtmlRatio(html, $),
     missingOrEmptyLinks: checkMissingOrEmptyLinks($),
     commonLibraryFiles: checkCommonLibraryFiles($),
-    httpHeaders: checkHttpHeaders($),
+    // httpHeaders: checkHttpHeaders($),
     webStack: checkWebStack($),
   };
 };
@@ -172,11 +172,16 @@ export const checkSeoTags = (html) => {
  */
 export const scrapeWebsiteDetails = async (url, page) => {
   try {
-    // Navigate to the main URL
-    await safeGoto(page, url);
 
-    // await for dynamic content
-    await waitForDynamicContent(page)
+    await blockUnnecessaryResources(page);
+
+
+
+    // Navigate to the main URL
+    await safeGoto(page, url, 0);
+
+
+
 
     // await blockUnnecessaryResources(page);
     await mimicScroll(page, 2000);
@@ -198,8 +203,7 @@ export const scrapeWebsiteDetails = async (url, page) => {
     if (imprintLink) {
       // Navigate to the Imprint/Impressum page
       await safeGoto(page, imprintLink);
-      // await for dynamic content
-      await waitForDynamicContent(page)
+
       // await blockUnnecessaryResources(page);
       await mimicScroll(page, 2000);
 
@@ -210,7 +214,7 @@ export const scrapeWebsiteDetails = async (url, page) => {
       imprintDetails = extractContactInfo(imprintText);
     }
 
-    return { socialMediaLinks, imprintDetails };
+    return { socialMediaLinks, imprintDetails, seoInfo };
   } catch (error) {
     console.error(`Error while scraping ${url}:`, error);
     return { socialMediaLinks: {}, imprintDetails: null, seoInfo: null };

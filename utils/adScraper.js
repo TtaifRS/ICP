@@ -1,7 +1,17 @@
 import * as cheerio from 'cheerio'
+
 import { safeGoto, mimicScroll } from './puppeteer.js';
+
 import { scrapeFacebookPageID, scrapeMetaAdLibrary } from '../helpers/facebookAd.js';
 
+
+
+/**
+ * Scrape google ad data from google ad transparency library
+ * @param {object} page - Puppeteer page instance.
+ * @param {string} leadUrl - URL of the lead website.
+ * @returns {object} - Data from Google Ad Library or error information.
+ */
 export const scrapeGoogleAdTransparency = async (page, leadUrl) => {
   let result = null;
 
@@ -34,7 +44,7 @@ export const scrapeGoogleAdTransparency = async (page, leadUrl) => {
     const creativeUrl = `https://adstransparency.google.com${firstCreativeHref}`;
 
     await safeGoto(page, creativeUrl);
-    // await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+
 
     const creativePageHtml = await page.content();
     const $$ = cheerio.load(creativePageHtml);

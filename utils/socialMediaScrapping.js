@@ -1,6 +1,8 @@
-import { safeGoto } from './puppeteer.js'; // Assuming safeGoto handles retries and navigation
 import * as cheerio from 'cheerio'
 import nlp from 'compromise';
+
+import { safeGoto } from './puppeteer.js';
+
 /**
  * Scrape the number of followers from a Facebook page.
  * @param {puppeteer.Page} page - Puppeteer page instance.
@@ -100,8 +102,9 @@ export const scrapeInstagramFollowers = async (page, instagramUrl) => {
  * @returns {Promise<string|null>} The industry text or null if not found.
  */
 export const scrapeLinkedInData = async (page, linkedinUrl) => {
+  const sanitizedUrl = linkedinUrl.replace(/(\/company\/[^/]+).*/, '$1');
   try {
-    await safeGoto(page, linkedinUrl);
+    await safeGoto(page, sanitizedUrl);
 
     // Check for auth wall redirection
     if (await page.$('div.authwall')) {

@@ -14,7 +14,7 @@ export const launchBrowser = async () => {
 
 
   const browser = await puppeteer.launch({
-    headless: false, // Change to true for headless mode
+    headless: true,
     args: [
       `--user-agent=${desktopUserAgent}`,
       '--no-sandbox',
@@ -49,7 +49,7 @@ export const launchBrowser = async () => {
     });
   });
 
-  await page.setGeolocation({ latitude: 52.5200, longitude: 13.4050 });
+  await page.setGeolocation({ latitude: 52.5200, longitude: 13.4050 }); // Set German location
 
   return browser;
 };
@@ -69,7 +69,7 @@ export const blockUnnecessaryResources = async (page) => {
   page.on('request', (request) => {
     try {
       const resourceType = request.resourceType();
-      if (['stylesheet', 'script', 'image', 'font', 'media'].includes(resourceType)) {
+      if (['stylesheet', 'image', 'font', 'media'].includes(resourceType)) {
         request.abort(); // Block unnecessary resources
       } else {
         request.continue(); // Allow other requests
@@ -87,13 +87,74 @@ export const blockUnnecessaryResources = async (page) => {
  * Handles navigation with retries in case of errors.
  * @param {puppeteer.Page} page - Puppeteer page instance.
  * @param {string} url - URL to navigate to.
+ * @param {number} timeout number in ms
  * @param {number} retries - Number of retry attempts.
  */
-export const safeGoto = async (page, url, retries = 3) => {
+// export const safeGoto = async (page, url, waitUntil = 'networkidle2', timeout = 60000, retries = 3, waitFor = false) => {
+//   for (let attempt = 1; attempt <= retries; attempt++) {
+//     try {
+//       // Navigate to the URL
+//       await page.goto(url, { waitUntil, timeout });
+
+//       if (waitFor) {
+//         await page.waitForFunction(
+//           () => {
+//             const socialMediaSelectors = ['a[href*="facebook.com"]', 'a[href*="twitter.com"]', 'a[href*="instagram.com"]', 'a[href*="youtube.com"], a[href*="linkedin.com"]'];
+//             const imprintSelectors = ['a[href*="imprint"]', 'a[href*="impressum"]'];
+
+//             return (
+//               socialMediaSelectors.some(selector => document.querySelector(selector)) ||
+//               imprintSelectors.some(selector => document.querySelector(selector))
+//             );
+//           },
+//           { timeout: 15000 } // Wait up to 15 seconds
+//         ).catch(() => {
+//           console.warn("Specific elements not found in time, proceeding with partial data.");
+//         });
+//       }
+
+//       return; // Exit function if navigation is successful
+//     } catch (error) {
+//       // Log detailed error message
+//       console.warn(`Attempt ${attempt} failed for ${url}: ${error.message}`);
+
+//       // Handle specific errors
+//       if (error.message.includes('Execution context was destroyed')) {
+//         console.warn(`Execution context error on ${url} (attempt ${attempt}). Retrying...`);
+//       } else if (error.message.includes('Navigation timeout')) {
+//         console.warn(`Navigation timeout for ${url} (attempt ${attempt}). Retrying...`);
+//       } else if (error.message.includes('net::ERR_CONNECTION_REFUSED')) {
+//         console.warn(`Connection refused to ${url} (attempt ${attempt}). Retrying...`);
+//       } else if (error.message.includes('net::ERR_NAME_NOT_RESOLVED')) {
+//         console.warn(`DNS resolution failed for ${url} (attempt ${attempt}). Retrying...`);
+//       } else if (error.message.includes('Target closed')) {
+//         console.warn(`Page or browser unexpectedly closed for ${url} (attempt ${attempt}). Retrying...`);
+//       } else {
+//         console.error(`Unexpected error on ${url} (attempt ${attempt}): ${error.message}`);
+//       }
+
+//       // If max retries reached, rethrow the error
+//       if (attempt === retries) {
+//         throw new Error(`Failed to navigate to ${url} after ${retries} attempts.`);
+//       }
+
+//       // Wait before retrying
+//       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+//       // Reload the page to reset context
+//       try {
+//         await page.reload({ waitUntil: 'domcontentloaded' });
+//       } catch (reloadError) {
+//         console.warn(`Failed to reload the page on ${url}: ${reloadError.message}`);
+//       }
+//     }
+//   }
+// };
+export const safeGoto = async (page, url, timeout = 60000, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       // Navigate to the URL
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+      await page.goto(url, { waitUntil: 'networkidle2', timeout });
       return; // Exit function if navigation is successful
     } catch (error) {
       // Check if the error is related to the execution context being destroyed
@@ -120,7 +181,6 @@ export const safeGoto = async (page, url, retries = 3) => {
     }
   }
 };
-
 
 /**
  * Mimics human-like scrolling behavior on the page.
@@ -168,6 +228,7 @@ export const waitForDynamicContent = async (page, timeout = 30000) => {
       () => document.querySelectorAll('*').length > 0,
       { timeout }
     );
+    console.log(document.querySelectorAll('*').length > 0)
   } catch {
     throw new Error('Dynamic content did not load within the timeout.');
   }

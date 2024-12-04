@@ -1,5 +1,3 @@
-// Individual Checks
-
 export const checkTitleTag = ($) => {
   const title = $('title').text();
   return title
@@ -58,25 +56,17 @@ export const checkHeaderTags = ($) => {
 
 export const checkImageAltText = ($) => {
   const totalImages = $('img').length;
-  const imagesMissingAlt = [];
-  $('img').each((_, element) => {
-    const alt = $(element).attr('alt');
-    if (!alt) {
-      imagesMissingAlt.push({
-        src: $(element).attr('src') || null,
-        alt: 'Missing',
-      });
-    }
-  });
+  const totalMissingAlt = $('img').filter((_, element) => !$(element).attr('alt')).length;
 
   return {
-    total: totalImages,
-    missingAlt: imagesMissingAlt.length,
-    imagesMissingAlt,
+    totalImages,
+    totalMissingAlt,
+    altMissing: totalMissingAlt > 0, // true if any images are missing alt, false otherwise
     description:
       'Images should have alt attributes for better accessibility and SEO. Missing alt tags may affect search rankings.',
   };
 };
+
 
 export const checkSchemaMarkup = ($) => ({
   exists: $('script[type="application/ld+json"]').length > 0,

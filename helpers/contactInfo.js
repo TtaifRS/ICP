@@ -40,7 +40,6 @@ export const extractPhonesFromAnchors = ($, phonePattern) => {
 };
 
 // Helper to extract job titles and names
-
 export const extractJobTitlesAndNames = (textContent, jobTitles) => {
   const words = textContent.split(/\s+/); // Split the text into words
   const results = [];

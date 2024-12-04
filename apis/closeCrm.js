@@ -1,8 +1,9 @@
 import axios from 'axios'
 
-/*
-? Get all the close leads 
-*/
+/**
+ * fetch close data
+ * @returns leads data
+ */
 export const fetchCloseLeads = async () => {
   const apiEndPoint = 'https://api.close.com/api/v1/lead/';
   try {
@@ -17,10 +18,7 @@ export const fetchCloseLeads = async () => {
     });
     const leads = response.data?.data || [];
     return {
-      leads: leads.map((lead) => ({
-        url: lead.url,
-        name: lead.name,
-      })),
+      leads,
       success: true,
     };
 

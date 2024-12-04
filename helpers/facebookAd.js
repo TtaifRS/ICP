@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+
 import { safeGoto } from '../utils/puppeteer.js';
 
 export const scrapeFacebookPageID = async (page, facebookUrl) => {
@@ -23,11 +24,9 @@ export const scrapeFacebookPageID = async (page, facebookUrl) => {
 
     // Find all text inside <span> tags
     const spanText = $('span').map((i, el) => $(el).text().trim()).get();
-    console.log('All Span Text:', spanText);
 
     // Find the index of "Page ID"
     const pageIdIndex = spanText.findIndex((text) => text.includes('Page ID'));
-    console.log('Page Index:', pageIdIndex);
 
     if (pageIdIndex > 0) {
       // Get the text before "Page ID"
