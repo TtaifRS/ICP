@@ -14,6 +14,7 @@ export const launchBrowser = async () => {
 
 
   const browser = await puppeteer.launch({
+
     executablePath:
       process.env.NODE_ENV === "production"
         ? process.env.PUPPETEER_EXECUTABLE_PATH
@@ -27,7 +28,9 @@ export const launchBrowser = async () => {
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-blink-features=AutomationControlled',
-      '--lang=en-US,en'
+      '--lang=en-US,en',
+      "--single-process",
+      "--no-zygote",
     ],
   });
 
