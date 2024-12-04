@@ -23,8 +23,7 @@ export const launchBrowser = async () => {
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-blink-features=AutomationControlled',
       '--lang=en-US,en',
-      "--single-process",
-      "--no-zygote",
+
     ],
   });
 
