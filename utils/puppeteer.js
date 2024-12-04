@@ -114,7 +114,7 @@ export const safeGoto = async (page, url, timeout = 60000, retries = 3) => {
       }
 
       // Wait before retrying with exponential backoff
-      const delay = baseDelay * Math.pow(2, attempt - 1);
+      const delay = 2000 * Math.pow(2, attempt - 1);
       console.warn(`[${new Date().toISOString()}] Retrying in ${delay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
 

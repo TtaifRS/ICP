@@ -54,6 +54,7 @@ export const scrapeMetaAdLibrary = async (page, pageId) => {
 
     // Navigate to the constructed URL
     await safeGoto(page, adLibraryUrl);
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Wait for the page to load necessary content
     await page.waitForSelector('body', { timeout: 5000 });
