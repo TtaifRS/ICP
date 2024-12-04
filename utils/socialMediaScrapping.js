@@ -147,7 +147,7 @@ export const scrapeLinkedInData = async (page, linkedinUrl) => {
       employees,
     };
   } catch (error) {
-    console.error(`Error scraping LinkedIn data from ${linkedinUrl}`, error);
+    console.error(`Error scraping LinkedIn data from ${linkedinUrl}`);
     return null;
   }
 };

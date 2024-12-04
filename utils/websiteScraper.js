@@ -173,7 +173,6 @@ export const checkSeoTags = (html) => {
 export const scrapeWebsiteDetails = async (url, page) => {
   try {
 
-    await blockUnnecessaryResources(page);
 
 
 

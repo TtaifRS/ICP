@@ -28,6 +28,7 @@ export const scrapeGoogleAdTransparency = async (page, leadUrl) => {
       secure: true,
     });
     await safeGoto(page, transparencyUrl);
+    await new Promise(resolve => setTimeout(resolve, 3000));
     await mimicScroll(page);
 
     const transparencyPageHtml = await page.content();

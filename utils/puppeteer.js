@@ -14,13 +14,7 @@ export const launchBrowser = async () => {
 
 
   const browser = await puppeteer.launch({
-
-    // executablePath:
-    //   process.env.NODE_ENV === "production"
-    //     ? process.env.PUPPETEER_EXECUTABLE_PATH
-    //     : puppeteer.executablePath(),
-
-    headless: true,
+    headless: false,
     args: [
       `--user-agent=${desktopUserAgent}`,
       '--no-sandbox',
@@ -98,93 +92,38 @@ export const blockUnnecessaryResources = async (page) => {
  * @param {number} timeout number in ms
  * @param {number} retries - Number of retry attempts.
  */
-// export const safeGoto = async (page, url, waitUntil = 'networkidle2', timeout = 60000, retries = 3, waitFor = false) => {
-//   for (let attempt = 1; attempt <= retries; attempt++) {
-//     try {
-//       // Navigate to the URL
-//       await page.goto(url, { waitUntil, timeout });
 
-//       if (waitFor) {
-//         await page.waitForFunction(
-//           () => {
-//             const socialMediaSelectors = ['a[href*="facebook.com"]', 'a[href*="twitter.com"]', 'a[href*="instagram.com"]', 'a[href*="youtube.com"], a[href*="linkedin.com"]'];
-//             const imprintSelectors = ['a[href*="imprint"]', 'a[href*="impressum"]'];
-
-//             return (
-//               socialMediaSelectors.some(selector => document.querySelector(selector)) ||
-//               imprintSelectors.some(selector => document.querySelector(selector))
-//             );
-//           },
-//           { timeout: 15000 } // Wait up to 15 seconds
-//         ).catch(() => {
-//           console.warn("Specific elements not found in time, proceeding with partial data.");
-//         });
-//       }
-
-//       return; // Exit function if navigation is successful
-//     } catch (error) {
-//       // Log detailed error message
-//       console.warn(`Attempt ${attempt} failed for ${url}: ${error.message}`);
-
-//       // Handle specific errors
-//       if (error.message.includes('Execution context was destroyed')) {
-//         console.warn(`Execution context error on ${url} (attempt ${attempt}). Retrying...`);
-//       } else if (error.message.includes('Navigation timeout')) {
-//         console.warn(`Navigation timeout for ${url} (attempt ${attempt}). Retrying...`);
-//       } else if (error.message.includes('net::ERR_CONNECTION_REFUSED')) {
-//         console.warn(`Connection refused to ${url} (attempt ${attempt}). Retrying...`);
-//       } else if (error.message.includes('net::ERR_NAME_NOT_RESOLVED')) {
-//         console.warn(`DNS resolution failed for ${url} (attempt ${attempt}). Retrying...`);
-//       } else if (error.message.includes('Target closed')) {
-//         console.warn(`Page or browser unexpectedly closed for ${url} (attempt ${attempt}). Retrying...`);
-//       } else {
-//         console.error(`Unexpected error on ${url} (attempt ${attempt}): ${error.message}`);
-//       }
-
-//       // If max retries reached, rethrow the error
-//       if (attempt === retries) {
-//         throw new Error(`Failed to navigate to ${url} after ${retries} attempts.`);
-//       }
-
-//       // Wait before retrying
-//       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-//       // Reload the page to reset context
-//       try {
-//         await page.reload({ waitUntil: 'domcontentloaded' });
-//       } catch (reloadError) {
-//         console.warn(`Failed to reload the page on ${url}: ${reloadError.message}`);
-//       }
-//     }
-//   }
-// };
 export const safeGoto = async (page, url, timeout = 60000, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
+
+
       // Navigate to the URL
-      await page.goto(url, { waitUntil: 'networkidle2', timeout });
-      return; // Exit function if navigation is successful
+      await page.goto(url, { waitUntil: "networkidle2", timeout });
+
+      return; // Exit if navigation is successful
+
     } catch (error) {
-      // Check if the error is related to the execution context being destroyed
-      if (error.message.includes('Execution context was destroyed')) {
-        console.warn(`Execution context error on ${url} (attempt ${attempt}). Retrying...`);
-      } else {
-        console.error(`Error navigating to ${url} (attempt ${attempt}): ${error.message}`);
-      }
+      console.warn(
+        ` Error on attempt ${attempt} to navigate to ${url}: ${error.message}`
+      );
 
-      // If max retries reached, rethrow the error
+      // Check if max retries reached
       if (attempt === retries) {
-        throw new Error(`Failed to navigate to ${url} after ${retries} attempts.`);
+        throw new Error(`Failed to navigate to ${url} after ${retries} attempts: ${error.message}`);
       }
 
-      // Wait before retrying
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Wait before retrying with exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.warn(`[${new Date().toISOString()}] Retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
 
-      // Reload the page to reset context
+      // Reload the page to reset state before the next attempt
       try {
         await page.reload({ waitUntil: 'domcontentloaded' });
+
       } catch (reloadError) {
-        console.warn(`Failed to reload the page: ${reloadError.message}`);
+        console.warn(`[${new Date().toISOString()}] Failed to reload the page: ${reloadError.message}`);
       }
     }
   }

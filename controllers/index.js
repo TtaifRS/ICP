@@ -1,6 +1,6 @@
 import { fetchCloseLeads } from '../apis/closeCrm.js';
 
-import { launchBrowser } from '../utils/puppeteer.js';
+import { blockUnnecessaryResources, launchBrowser } from '../utils/puppeteer.js';
 import { scrapeWebsiteDetails } from '../utils/websiteScraper.js';
 import { fetchPageSpeedData } from '../utils/pageSpeedApi.js';
 import { searchWebsiteOnGoogle } from '../utils/googleSearch.js';
@@ -31,6 +31,8 @@ export const postScrapers = async (req, res) => {
     }));
 
     const searchPage = await browser.newPage();
+    await blockUnnecessaryResources(searchPage);
+
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
     chalkConsole('Dummy search for "Wikipedia" completed.', 'blue');
 
@@ -45,6 +47,7 @@ export const postScrapers = async (req, res) => {
       }
 
       const leadPage = await browser.newPage();
+      await blockUnnecessaryResources(leadPage)
 
       // Step 1: Scrape website details
       chalkConsole(`Step 1: Scraping website details from ${lead.url}`, 'yellow');
@@ -69,6 +72,7 @@ export const postScrapers = async (req, res) => {
       if (facebook) {
         chalkConsole(`Step 2.1: Scraping Facebook data for ${facebook}`, 'yellow');
         const facebookPage = await browser.newPage();
+        await blockUnnecessaryResources(facebookPage)
         facebookFollowers = await scrapeFacebookFollowers(facebookPage, facebook);
         chalkConsole(`Step 2.2: Scraping Meta ad library for ${facebook}`, 'yellow');
         metaAdLibrary = await scrapeFacebookAndMetaAdLibrary(facebookPage, facebook);
@@ -87,6 +91,7 @@ export const postScrapers = async (req, res) => {
       if (linkedin) {
         chalkConsole(`Step 4: Scraping LinkedIn data for ${linkedin}`, 'yellow');
         const linkedinPage = await browser.newPage();
+        await blockUnnecessaryResources(linkedinPage)
         let retryCount = 0;
 
         while (retryCount < 2) {

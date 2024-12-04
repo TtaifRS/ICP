@@ -5,6 +5,7 @@ export const performSearch = async (page, searchTerm) => {
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`;
   try {
     await safeGoto(page, searchUrl);
+    await new Promise(resolve => setTimeout(resolve, 3000));
     await page.waitForSelector('#search', { timeout: 15000 });
     await mimicScroll(page, 2000);
 
