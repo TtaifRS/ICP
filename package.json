@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
   "start": "node server.js"
-},
+  },
   "author": "Taif Rahaman",
   "license": "ISC",
   "dependencies": {
