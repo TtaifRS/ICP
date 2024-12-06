@@ -14,7 +14,7 @@ export const launchBrowser = async () => {
 
 
   const browser = await puppeteer.launch({
-    headless: process.env.production ? true : false,
+    headless: true,
     args: [
       `--user-agent=${desktopUserAgent}`,
       '--no-sandbox',
