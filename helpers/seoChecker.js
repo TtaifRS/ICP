@@ -140,7 +140,10 @@ export const checkCanonicalTag = ($) => {
       description:
         'The canonical tag helps prevent duplicate content issues by specifying the preferred version of a page.',
     }
-    : { exists: false };
+    : {
+      exists: false, description:
+        'The canonical tag helps prevent duplicate content issues by specifying the preferred version of a page.',
+    };
 };
 
 export const checkFavicon = ($) => {
@@ -154,7 +157,7 @@ export const checkViewportMetaTag = ($) => {
   const viewport = $('meta[name="viewport"]').attr('content');
   return viewport
     ? { exists: true, content: viewport, description: 'The viewport meta tag ensures proper rendering on mobile devices.' }
-    : { exists: false };
+    : { exists: false, description: 'The viewport meta tag ensures proper rendering on mobile devices.' };
 };
 
 export const checkBrokenLinks = ($) => {

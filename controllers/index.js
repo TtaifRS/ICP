@@ -18,6 +18,7 @@ export const postScrapers = async (req, res) => {
   try {
     const { leads, success } = await fetchCloseLeads();
 
+
     if (!success) {
       chalkConsole('Failed to fetch leads from Close CRM.', 'red');
       return res.status(500).json({ message: 'Failed to fetch leads from Close CRM.' });

@@ -3,7 +3,7 @@ import { postScrapers, testFunction, testRender } from '../controllers/index.js'
 
 const router = express.Router()
 
-router.post('/leads', postScrapers)
+router.post('/leads/all-functions', postScrapers)
 router.get('/render/test', testRender)
 router.get('/test', testFunction)
 

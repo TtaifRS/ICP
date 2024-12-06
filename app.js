@@ -3,6 +3,8 @@ import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 
 import closeRouter from './routes/index.js'
+import leadRouter from './routes/lead.js'
+import websiteScraperRouter from './routes/websiteScraper.js'
 
 dotenv.config()
 
@@ -10,6 +12,8 @@ dotenv.config()
 const app = express()
 app.use(express.json())
 app.use('/api', closeRouter)
+app.use('/api', leadRouter)
+app.use('/api', websiteScraperRouter)
 
 const connectDB = async () => {
   try {

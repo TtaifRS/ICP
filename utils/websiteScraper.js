@@ -172,15 +172,31 @@ export const checkSeoTags = (html) => {
  */
 export const scrapeWebsiteDetails = async (url, page) => {
   try {
-
-
-
-
     // Navigate to the main URL
     await safeGoto(page, url, 0);
 
+    // Get the final navigated URL after redirection
+    let finalUrl = page.url();
 
+    // Check if the final URL includes '/en' and replace it with '/de' if present
+    if (finalUrl.includes('/en')) {
+      finalUrl = finalUrl.replace('/en', '/de');
+      console.log(`Redirecting to German version: ${finalUrl}`);
+      await safeGoto(page, finalUrl, 0);
+    }
 
+    // Check the number of divs in the body tag
+    const divCount = await page.evaluate(() => document.body.querySelectorAll('div').length);
+
+    if (!divCount || divCount < 10) {
+      console.log(`Low number of divs (${divCount}) detected, waiting 5 seconds...`);
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      // Wait for the page to reload if necessary
+      await page.waitForNavigation({ waitUntil: ['load', 'domcontentloaded', 'networkidle0'] });
+
+      // Wait for the page content to be stable
+      await page.waitForSelector('body', { timeout: 30000 });
+    }
 
     // await blockUnnecessaryResources(page);
     await mimicScroll(page, 2000);
