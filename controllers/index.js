@@ -187,9 +187,9 @@ export const postScrapers = async (req, res) => {
 
 
 
-export const testRender = async (req, res) => {
+export const testServer = async (req, res) => {
   try {
-    res.status(200).json({ message: "Render is working..." })
+    res.status(200).json({ message: "Server is working..." })
   } catch (err) {
     res.status(401).json({ message: "something went wrong" })
   }

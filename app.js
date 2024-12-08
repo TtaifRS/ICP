@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import closeRouter from './routes/index.js'
 import leadRouter from './routes/lead.js'
 import websiteScraperRouter from './routes/websiteScraper.js'
+import facebookScraperRouter from './routes/facebookScraper.js'
 
 dotenv.config()
 
@@ -14,6 +15,7 @@ app.use(express.json())
 app.use('/api', closeRouter)
 app.use('/api', leadRouter)
 app.use('/api', websiteScraperRouter)
+app.use('/api', facebookScraperRouter)
 
 const connectDB = async () => {
   try {

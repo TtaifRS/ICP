@@ -184,11 +184,12 @@ export const scrapeWebsiteDetails = async (url, page) => {
       console.log(`Redirecting to German version: ${finalUrl}`);
       await safeGoto(page, finalUrl, 0);
     }
-
+    await new Promise(resolve => setTimeout(resolve, 10000));
     // Check the number of divs in the body tag
     const divCount = await page.evaluate(() => document.body.querySelectorAll('div').length);
 
-    if (!divCount || divCount < 10) {
+
+    if (!divCount || divCount < 20) {
       console.log(`Low number of divs (${divCount}) detected, waiting 5 seconds...`);
       await new Promise(resolve => setTimeout(resolve, 10000));
       // Wait for the page to reload if necessary
