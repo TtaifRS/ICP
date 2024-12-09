@@ -69,6 +69,7 @@ export const fetchPageSpeedData = async (url, strategy) => {
     return { success: true, metrics };
   } catch (error) {
     console.error(`Error fetching PageSpeed data (${strategy}):`, error.message);
+    console.error(error)
 
     // Handle errors from PageSpeed API gracefully
     if (error.response) {
