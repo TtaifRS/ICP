@@ -7,11 +7,17 @@ import leadRouter from './routes/lead.js'
 import websiteScraperRouter from './routes/websiteScraper.js'
 import facebookScraperRouter from './routes/facebookScraper.js'
 
+import { setupSwagger } from './swagger.js';
+
 dotenv.config()
 
 
 const app = express()
 app.use(express.json())
+
+// Initialize Swagger documentation
+setupSwagger(app);
+
 app.use('/api', closeRouter)
 app.use('/api', leadRouter)
 app.use('/api', websiteScraperRouter)
