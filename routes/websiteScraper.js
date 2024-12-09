@@ -27,7 +27,7 @@
  *           type: string
  *         pinterest:
  *           type: string
- *         SEOInfo:
+ *     SEOInfo:
  *           type: object
  *           properties:
  *             titleTag:
