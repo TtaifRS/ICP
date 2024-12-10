@@ -1,12 +1,7 @@
 import axios from 'axios';
+import lighthouse from 'lighthouse';
 
-/**
- * Fetches PageSpeed Insights data for a given URL and strategy.
- * @param {string} url - The website URL to analyze.
- * @param {string} strategy - Analysis strategy: "mobile" or "desktop".
- * @returns {Promise<object>} - PageSpeed Insights metrics.
- */
-export const fetchPageSpeedData = async (url, strategy) => {
+export const fetchPageSpeedDataAPI = async (url, strategy) => {
   const API_KEY = process.env.GOOGLE_PAGESPEED_API_KEY;
   const API_URL = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed`;
 
@@ -85,3 +80,84 @@ export const fetchPageSpeedData = async (url, strategy) => {
   }
 };
 
+
+
+
+export const fetchPageSpeedData = async (browser, url, strategy) => {
+  try {
+
+
+    // Get Puppeteer connection details
+    const browserWSEndpoint = await browser.wsEndpoint();
+
+    // Run Lighthouse
+    const result = await lighthouse(url, {
+      port: new URL(browserWSEndpoint).port,
+      output: 'json',
+      onlyCategories: ['performance'], // Focus only on performance metrics
+      formFactor: strategy === 'mobile' ? 'mobile' : 'desktop',
+      screenEmulation: strategy === 'mobile'
+        ? { mobile: true, width: 390, height: 844, deviceScaleFactor: 3 }
+        : { mobile: false, width: 1440, height: 900, deviceScaleFactor: 2 },
+    });
+
+
+
+    // Extract metrics
+    const performanceScore = result.lhr.categories.performance.score * 100;
+    const audits = result.lhr.audits;
+
+    const metrics = {
+      performanceScore,
+      firstContentfulPaint: audits['first-contentful-paint'].displayValue,
+      speedIndex: audits['speed-index'].displayValue,
+      timeToInteractive: audits['interactive'].displayValue,
+      mobileFriendly: strategy === 'mobile' ? 'Supported' : 'N/A',
+
+    };
+
+
+    const fcp = parseFloat(metrics.firstContentfulPaint.replace('s', ''));
+    const speedIndex = parseFloat(metrics.speedIndex.replace('s', ''));
+    const tti = parseFloat(metrics.timeToInteractive.replace('s', ''));
+
+
+    let performanceDescription = '';
+
+    // Check FCP
+    if (fcp <= 2.2) {
+      performanceDescription += `FCP is within the limit (2.2 seconds). Measured: ${fcp} seconds. `;
+    } else {
+      performanceDescription += `FCP exceeds the limit (2.2 seconds). Measured: ${fcp} seconds. `;
+    }
+
+    // Check Speed Index
+    if (speedIndex <= 3.4) {
+      performanceDescription += `Speed Index is within the limit (3.4 seconds). Measured: ${speedIndex} seconds. `;
+    } else {
+      performanceDescription += `Speed Index exceeds the limit (3.4 seconds). Measured: ${speedIndex} seconds. `;
+    }
+
+    // Check TTI
+    if (tti <= 7.3) {
+      performanceDescription += `TTI is within the limit (7.3 seconds). Measured: ${tti} seconds.`;
+    } else {
+      performanceDescription += `TTI exceeds the limit (7.3 seconds). Measured: ${tti} seconds.`;
+    }
+
+    // Attach the description to the metrics object
+    metrics.performanceDescription = performanceDescription;
+
+    return {
+      success: true,
+      metrics,
+
+    };
+  } catch (err) {
+    console.error(`Failed to fetch PageSpeed data for ${url}: ${err.message}`);
+    return {
+      success: false,
+      error: err.message,
+    };
+  }
+};

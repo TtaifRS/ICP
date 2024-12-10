@@ -567,6 +567,7 @@ export const postSingleLead = async (req, res) => {
     chalkConsole(`Processing user-provided company: ${companyName}`, 'cyan');
 
     const searchPage = await browser.newPage();
+    await blockUnnecessaryResources(searchPage)
     await searchWebsiteOnGoogle(searchPage, 'Wikipedia', 'https://www.wikipedia.org');
     chalkConsole('Dummy search for "Wikipedia" completed.', 'blue');
 
@@ -632,9 +633,9 @@ export const postSingleLead = async (req, res) => {
 
     // Step 6: Fetch PageSpeed data
     chalkConsole(`Step 6.1: Fetching Mobile PageSpeed data for ${lead.url}`, 'yellow');
-    const mobileData = await fetchPageSpeedData(lead.url, 'mobile');
+    const mobileData = await fetchPageSpeedData(browser, lead.url, 'mobile');
     chalkConsole(`Step 6.2: Fetching Desktop PageSpeed data for ${lead.url}`, 'yellow');
-    const desktopData = await fetchPageSpeedData(lead.url, 'desktop');
+    const desktopData = await fetchPageSpeedData(browser, lead.url, 'desktop');
     chalkConsole(`Step 6 completed: Fetched PageSpeed data for ${lead.url}`, 'green');
 
     // Step 7: Search Google for ranking
