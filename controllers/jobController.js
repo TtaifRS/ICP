@@ -115,7 +115,7 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
 
             const results = await Promise.all(pageTasks);
 
-            console.log(results)
+
 
             if (results.includes('noResults')) {
               keepScraping = false;
@@ -300,7 +300,7 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
 
           for (const job of jobListings) {
             if (!job.companyName || !job.jobTitle || !job.jobLink) {
-              console.log(chalk.yellow(`Incomplete job found and ignored: ${JSON.stringify(job)}`));
+              chalkConsole(`Incomplete job found and ignored: ${JSON.stringify(job)}`, 'yellow');
               continue;
             }
 
@@ -424,7 +424,7 @@ export const updateCompanyUrlswithGoogleMap = async (req, res) => {
     while (hasMoreLeads) {
 
       const leads = await JobLead.find({ processed: false }).limit(batchSize);
-      console.log(leads)
+
 
       if (leads.length === 0) {
         hasMoreLeads = false;
