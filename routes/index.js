@@ -5,7 +5,7 @@
  *     summary: Scrapes and processes detailed data for a single lead based on the provided company URL.
  *     description: This endpoint initiates the scraping of a company's details, such as social media links, Google ad transparency, PageSpeed data, Google ranking information, and more. The scraped data is stored in the database for further processing.
  *     tags:
- *       - Leads
+ *       - Lead
  *     parameters:
  *       - in: body
  *         name: leadData
