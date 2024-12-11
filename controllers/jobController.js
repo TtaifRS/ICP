@@ -19,14 +19,31 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const retryLimit = 3;
   let browser = null; // Centralized browser instance
+  let stopScraping = false;
 
+  req.on('close', async () => {
+    stopScraping = true;
+    console.log('Request was closed by the client. Stopping the scraping process.');
+
+
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('Browser instance closed successfully.');
+      } catch (err) {
+        console.error('Error closing browser:', err);
+      }
+    }
+  });
   try {
     chalkConsole('Starting the job scraping process...', 'blueBright');
 
     let retries = 0;
     let success = false;
 
+
     while (!success && retries < retryLimit) {
+      if (stopScraping) break;
       try {
         // Launch the browser only if not already running
         if (!browser) {
@@ -211,7 +228,22 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const retryLimit = 3;
   const retryDelay = 10000; // Wait 10 seconds before retrying in case of a major error
+  let stopScraping = false;
 
+  req.on('close', async () => {
+    stopScraping = true;
+    console.log('Request was closed by the client. Stopping the scraping process.');
+
+
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('Browser instance closed successfully.');
+      } catch (err) {
+        console.error('Error closing browser:', err);
+      }
+    }
+  });
   try {
     chalkConsole('Starting the StepStone job scraping process...', 'blueBright');
 
@@ -220,6 +252,7 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
     let allScraped = false; // Flag to check if all titles have been scraped
 
     while (!allScraped) {
+      if (stopScraping) break;
       try {
         browser = await launchBrowser();
         let progress = await Progress.findOne({ date: today, source: 'stepstone' });

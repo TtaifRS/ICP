@@ -13,6 +13,7 @@ const jobLeadSchema = new mongoose.Schema({
       jobTitle: { type: String, required: true },
       jobLink: { type: String, required: true },
       jobDate: { type: Date, required: false },
+      jobSource: { type: String, require: true }
 
     },
   ],
