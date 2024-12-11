@@ -66,23 +66,26 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
         chalkConsole(`Remaining titles to scrape: ${remainingTitles.length}`, 'blueBright');
 
         for (const [index, title] of remainingTitles.entries()) {
+          if (stopScraping) break;
           chalkConsole(`\nScraping jobs for title (${index + 1}/${remainingTitles.length}): ${title}`, 'green');
           let pageNumber = 0;
           let keepScraping = true;
           let leadsAddedForTitle = 0;
 
           while (keepScraping) {
+            if (stopScraping) break;
             const pageUrls = Array.from({ length: numPages }, (_, i) => {
               const formattedTitle = title.replace(/\s+/g, '+');
               return `https://de.indeed.com/jobs?q=${formattedTitle}&start=${(pageNumber + i) * 10}&fromage=1`;
             });
-
+            if (stopScraping) break;
             const pageTasks = pageUrls.map(async (url) => {
               const page = await browser.newPage();
               await blockUnnecessaryResources(page);
 
               try {
                 chalkConsole(`Scraping URL: ${url}`, 'blue');
+
                 const navigationSuccess = await navigateToJobLink(page, url);
                 if (!navigationSuccess) throw new Error(`Failed to navigate to ${url}`);
 
@@ -126,6 +129,7 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
             }
 
             for (const job of jobListings) {
+              if (stopScraping) break;
               let lead = await JobLead.findOne({ companyName: job.company });
 
               if (!lead) {
@@ -161,6 +165,7 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
             }
 
             const page = await browser.newPage();
+            if (stopScraping) break;
             const navigationSuccess = await navigateToJobLink(page, pageUrls[0]);
 
             if (!navigationSuccess) {
@@ -197,8 +202,9 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
         success = true;
       } catch (err) {
         retries++;
-        console.error(`Error encountered, retrying (${retries}/${retryLimit}):`, err);
 
+        console.error(`Error encountered, retrying (${retries}/${retryLimit}):`, err);
+        if (stopScraping) break;
         // Ensure the browser is properly closed before retrying
         if (browser) {
           await browser.close();
@@ -224,16 +230,15 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
 
 
 export const scrapeAndSaveStepstonesLeads = async (req, res) => {
-
   const today = new Date().toISOString().split('T')[0];
   const retryLimit = 3;
   const retryDelay = 10000; // Wait 10 seconds before retrying in case of a major error
   let stopScraping = false;
+  let browser;
 
-  req.on('close', async () => {
+  req.on('aborted', async () => {
     stopScraping = true;
     console.log('Request was closed by the client. Stopping the scraping process.');
-
 
     if (browser) {
       try {
@@ -244,15 +249,15 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
       }
     }
   });
+
   try {
     chalkConsole('Starting the StepStone job scraping process...', 'blueBright');
 
-    let browser;
-
     let allScraped = false; // Flag to check if all titles have been scraped
 
-    while (!allScraped) {
+    while (!allScraped && !stopScraping) {
       if (stopScraping) break;
+
       try {
         browser = await launchBrowser();
         let progress = await Progress.findOne({ date: today, source: 'stepstone' });
@@ -260,9 +265,8 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
           progress = new Progress({ date: today, source: 'stepstone', completedTitles: [] });
         }
 
-
         const completedTitles = progress.completedTitles.map((item) => item.title);
-        let remainingTitles = jobTitles.filter(title => !completedTitles.includes(title));
+        let remainingTitles = jobTitles.filter((title) => !completedTitles.includes(title));
 
         if (remainingTitles.length === 0) {
           chalkConsole('All job titles have already been scraped for today.', 'green');
@@ -273,6 +277,8 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
         chalkConsole(`Remaining titles to scrape: ${remainingTitles.length}`, 'blueBright');
 
         for (const [index, title] of remainingTitles.entries()) {
+          if (stopScraping) break;
+
           chalkConsole(`\nScraping jobs for title (${index + 1}/${remainingTitles.length}): ${title}`, 'yellow');
           let keepScraping = true;
           let leadsAddedForTitle = 0;
@@ -280,19 +286,16 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
           const formattedTitle = title.replace(/\s+/g, '-');
           const firstPageUrl = `https://www.stepstone.de/work/${formattedTitle}?ag=age_1`;
           const page = await browser.newPage();
-          await blockUnnecessaryResources(page);  // Block unnecessary resources to optimize
-
-          // Navigate to the first page
+          await blockUnnecessaryResources(page); // Block unnecessary resources to optimize
+          if (stopScraping) break;
           const navigationSuccess = await navigateToJobLink(page, firstPageUrl);
           if (!navigationSuccess) throw new Error(`Failed to navigate to ${firstPageUrl}`);
 
-          // Scrape jobs from the first page before pagination
-          chalkConsole(`Scraping jobs from the first page...`, 'yellow');
+          chalkConsole('Scraping jobs from the first page...', 'yellow');
           await page.waitForSelector('div[data-at="resultlist-flex-container"]', { timeout: 60000 });
 
           const jobListings = extractStepStonesListing(await page.content());
 
-          // Save job listings to MongoDB
           for (const job of jobListings) {
             if (!job.companyName || !job.jobTitle || !job.jobLink) {
               console.log(chalk.yellow(`Incomplete job found and ignored: ${JSON.stringify(job)}`));
@@ -305,12 +308,11 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
                 companyName: job.companyName,
                 location: job.companyLocation,
                 jobs: [],
-                processed: false
-
+                processed: false,
               });
             }
 
-            const jobExists = lead.jobs.some(existingJob => {
+            const jobExists = lead.jobs.some((existingJob) => {
               const existingJobDate = new Date(existingJob.jobDate).toDateString();
               const newJobDate = new Date(job.datePosted).toDateString();
               return existingJob.jobTitle === job.jobTitle && existingJobDate === newJobDate;
@@ -321,7 +323,7 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
                 jobTitle: job.jobTitle,
                 jobLink: job.jobLink,
                 jobDate: job.datePosted || new Date(),
-                jobSource: 'stepstone'
+                jobSource: 'stepstone',
               });
               leadsAddedForTitle++;
             }
@@ -333,46 +335,41 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
             }
           }
 
-          // Start handling pagination for pages 2 and onward
           while (keepScraping) {
+            if (stopScraping) break;
             try {
-              // Handle pagination and navigate to the next page
               const nextPageExists = await handlePagination(page);
-
-              // Wait between 10 and 20 seconds before navigating to the next page
               if (nextPageExists) {
-                await randomWait(10000, 20000);  // Wait before going to the next page
-
+                await randomWait(10000, 20000);
               } else {
-                keepScraping = false;  // Stop if there are no more pages
+                keepScraping = false;
               }
-
             } catch (err) {
               console.error('Error during Stepstone scraping:', err);
-              keepScraping = false;  // Stop scraping on error
+              keepScraping = false;
             }
           }
 
-          // Update progress for the current title
           progress.completedTitles.push({
             title: title,
             leadsAdded: leadsAddedForTitle,
           });
           await progress.save();
-
         }
 
         await browser.close();
 
-        // Recheck if all titles have been scraped
-        let updatedRemainingTitles = jobTitles.filter(title => !progress.completedTitles.map(t => t.title).includes(title));
+        let updatedRemainingTitles = jobTitles.filter((title) => !progress.completedTitles.map((t) => t.title).includes(title));
         if (updatedRemainingTitles.length === 0) {
           allScraped = true;
         }
       } catch (err) {
-        console.error(`Error encountered, will retry after waiting:`, err);
+        console.error('Error encountered, will retry after waiting:', err);
         if (browser) await browser.close();
-        await randomWait(retryDelay);  // Wait before retrying
+
+        if (stopScraping) break;
+
+        await randomWait(retryDelay);
       }
     }
 
@@ -386,7 +383,6 @@ export const scrapeAndSaveStepstonesLeads = async (req, res) => {
     res.status(500).json({ message: 'Unexpected error occurred', error: err.message });
   }
 };
-
 
 
 
