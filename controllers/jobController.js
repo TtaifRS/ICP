@@ -115,6 +115,8 @@ export const scrapeAndSaveIndeedLeads = async (req, res) => {
 
             const results = await Promise.all(pageTasks);
 
+            console.log(results)
+
             if (results.includes('noResults')) {
               keepScraping = false;
               break;
