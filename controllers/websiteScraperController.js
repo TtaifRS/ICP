@@ -123,7 +123,7 @@ export const scrapeWebsiteData = async (req, res) => {
 
 /**
  * @swagger
- * /leads/with-website-data:
+ * /leads/with-website-data?socialMediaLinks=true&imprintDetails=true&seoInfo=true:
  *   get:
  *     summary: Fetch leads with website scraping data.
  *     tags:

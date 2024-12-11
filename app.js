@@ -6,6 +6,8 @@ import closeRouter from './routes/index.js'
 import leadRouter from './routes/lead.js'
 import websiteScraperRouter from './routes/websiteScraper.js'
 import facebookScraperRouter from './routes/facebookScraper.js'
+import linkedinScraperRouter from './routes/linkedinScraper.js'
+import jobScraperRouter from './routes/jobLead.js'
 
 import { setupSwagger } from './swagger.js';
 
@@ -22,6 +24,9 @@ app.use('/api', closeRouter)
 app.use('/api', leadRouter)
 app.use('/api', websiteScraperRouter)
 app.use('/api', facebookScraperRouter)
+app.use('/api', linkedinScraperRouter)
+app.use('/api', jobScraperRouter)
+
 
 const connectDB = async () => {
   try {

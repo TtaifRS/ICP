@@ -29,3 +29,10 @@ export const handleAuthWall = async (browser, page) => {
     throw err;
   }
 };
+
+
+export const randomWait = (min, max) => {
+  const waitTime = Math.floor(Math.random() * (max - min + 1)) + min;
+  console.log(`Waiting for ${waitTime} milliseconds...`);
+  return new Promise((resolve) => setTimeout(resolve, waitTime));
+};

@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import UserAgent from 'user-agents';
+import { randomWait } from '../helpers/authWallHelper.js';
 
 // Add the stealth plugin to Puppeteer
 puppeteer.use(StealthPlugin());
@@ -177,5 +178,36 @@ export const waitForDynamicContent = async (page, timeout = 30000) => {
     console.log(document.querySelectorAll('*').length > 0)
   } catch {
     throw new Error('Dynamic content did not load within the timeout.');
+  }
+};
+
+
+export const navigateToJobLink = async (page, url, retries = 3) => {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+
+      // Navigate to the URL
+      await page.goto(url, { timeout: 120000, waitUntil: 'networkidle2' });
+
+      // Wait randomly to mimic human behavior
+      await randomWait(2000, 5000);
+
+      // // Check for Cloudflare challenge or unexpected response
+      // const status = await page.evaluate(() => document.readyState);
+      // if (status !== 'complete') {
+      //   throw new Error(`Page load incomplete (status: ${status})`);
+      // }
+
+      return true; // Successful navigation
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} to navigate to ${url} failed: ${error.message}`);
+
+      if (attempt === retries - 1) {
+        throw new Error(`Failed to load ${url} after ${retries} attempts.`);
+      }
+
+      // Wait before retrying
+      await randomWait(3000, 6000);
+    }
   }
 };

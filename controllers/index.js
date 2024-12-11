@@ -278,6 +278,8 @@ export const postScrapers = async (req, res) => {
  *         linkedinData:
  *           type: object
  *           properties:
+ *             companyName:
+ *               type: string
  *             industry:
  *               type: string
  *             size:

@@ -22,6 +22,7 @@ const InstagramFollowersSchema = new mongoose.Schema({
 });
 
 const LinkedinDataSchema = new mongoose.Schema({
+  companyName: { type: String },
   industry: { type: String },
   size: { type: String },
   headquarters: { type: String },

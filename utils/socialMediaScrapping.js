@@ -118,6 +118,9 @@ export const scrapeLinkedInData = async (page, linkedinUrl) => {
     const html = await page.content();
     const $ = cheerio.load(html);
 
+    // Extract the company name from the first h1 tag
+    const companyName = $('h1').first().text().trim() || null;
+
     // Extract general data
     const industry = $('div[data-test-id="about-us__industry"] dd').text().trim() || null;
     const size = $('div[data-test-id="about-us__size"] dd').text().trim() || null;
@@ -138,6 +141,7 @@ export const scrapeLinkedInData = async (page, linkedinUrl) => {
     });
 
     return {
+      companyName,
       industry,
       size,
       headquarters,
@@ -151,3 +155,4 @@ export const scrapeLinkedInData = async (page, linkedinUrl) => {
     return null;
   }
 };
+
